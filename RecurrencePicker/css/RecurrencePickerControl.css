@@ -1,0 +1,405 @@
+.recurrence-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+/* Modal Container */
+.recurrence-modal {
+    background: white;
+    border-radius: 8px;
+    width: 400px;
+    max-width: 90vw;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    overflow: hidden;
+}
+
+/* Modal Header */
+.recurrence-modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 24px;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.recurrence-modal-title {
+    font-size: 20px;
+    font-weight: 600;
+    color: #111827;
+    margin: 0;
+}
+
+.recurrence-close-button {
+    background: none;
+    border: none;
+    font-size: 24px;
+    color: #9ca3af;
+    cursor: pointer;
+    padding: 0;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.recurrence-close-button:hover {
+    color: #6b7280;
+}
+
+/* Modal Content */
+.recurrence-modal-content {
+    padding: 24px;
+}
+
+/* Form Grid */
+.recurrence-form-row {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 16px;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.recurrence-form-label {
+    font-size: 14px;
+    font-weight: 500;
+    color: #374151;
+}
+
+.recurrence-repeat-label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #374151;
+}
+
+.recurrence-repeat-icon {
+    font-size: 16px;
+}
+
+/* Input Controls */
+.recurrence-input-group {
+    display: flex;
+    gap: 8px;
+}
+
+.recurrence-number-input {
+    width: 64px;
+    padding: 8px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.recurrence-number-input:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.recurrence-select {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 14px;
+    background: white;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.recurrence-select:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Date Picker */
+.recurrence-date-picker {
+    position: relative;
+}
+
+.recurrence-date-input-group {
+    display: flex;
+    align-items: center;
+}
+
+.recurrence-date-input {
+    padding: 8px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+    flex: 1;
+}
+
+.recurrence-date-input:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.recurrence-date-button {
+    background: none;
+    border: none;
+    padding: 8px;
+    margin-left: 8px;
+    color: #6b7280;
+    cursor: pointer;
+    border-radius: 4px;
+}
+
+.recurrence-date-button:hover {
+    color: #374151;
+    background: #f3f4f6;
+}
+
+.recurrence-date-dropdown {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    margin-top: 4px;
+    background: white;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    z-index: 10;
+}
+
+.recurrence-date-native {
+    padding: 8px;
+    border: none;
+    outline: none;
+}
+
+/* Day Buttons Grid */
+.recurrence-days-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 8px;
+    margin-bottom: 24px;
+}
+
+.recurrence-day-button {
+    height: 40px;
+    border: none;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.recurrence-day-button-unselected {
+    background: #f3f4f6;
+    color: #374151;
+}
+
+.recurrence-day-button-unselected:hover {
+    background: #e5e7eb;
+}
+
+.recurrence-day-button-selected {
+    background: #0d9488;
+    color: white;
+}
+
+.recurrence-day-button-selected:hover {
+    background: #0f766e;
+}
+
+.recurrence-day-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+/* Radio Options */
+.recurrence-radio-group {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.recurrence-radio-option {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+}
+
+.recurrence-radio-input {
+    width: 16px;
+    height: 16px;
+    accent-color: #3b82f6;
+}
+
+.recurrence-radio-label {
+    font-size: 14px;
+    color: #374151;
+}
+
+/* Description Box */
+.recurrence-description {
+    background: #f9fafb;
+    padding: 16px;
+    border-radius: 6px;
+    margin-bottom: 24px;
+}
+
+.recurrence-description-text {
+    font-size: 14px;
+    color: #6b7280;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.recurrence-end-date-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.recurrence-link-button {
+    background: none;
+    border: none;
+    color: #3b82f6;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.recurrence-link-button:hover {
+    color: #1d4ed8;
+    text-decoration: underline;
+}
+
+/* Modal Footer */
+.recurrence-modal-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 24px;
+    border-top: 1px solid #e5e7eb;
+    background: #f9fafb;
+}
+
+.recurrence-footer-buttons {
+    display: flex;
+    gap: 12px;
+}
+
+.recurrence-button {
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: none;
+}
+
+.recurrence-button-primary {
+    background: #0d9488;
+    color: white;
+}
+
+.recurrence-button-primary:hover {
+    background: #0f766e;
+}
+
+.recurrence-button-secondary {
+    background: #e5e7eb;
+    color: #374151;
+}
+
+.recurrence-button-secondary:hover {
+    background: #d1d5db;
+}
+
+.recurrence-button-danger {
+    background: #fee2e2;
+    color: #dc2626;
+}
+
+.recurrence-button-danger:hover {
+    background: #fecaca;
+}
+
+/* Control Button */
+.recurrence-control-button {
+    padding: 8px 16px;
+    background: #3b82f6;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 500;
+    margin-bottom: 16px;
+}
+
+.recurrence-control-button:hover {
+    background: #2563eb;
+}
+
+/* Settings Display */
+.recurrence-settings {
+    margin-top: 16px;
+    padding: 16px;
+    background: #f3f4f6;
+    border-radius: 6px;
+}
+
+.recurrence-settings-title {
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.recurrence-settings-data {
+    font-size: 12px;
+    color: #6b7280;
+    white-space: pre-wrap;
+    font-family: monospace;
+}
+
+.recurrence-date-text-like:hover {
+    text-decoration-color: #3b82f6 !important;
+}
+
+.recurrence-date-text-like:focus {
+    text-decoration-color: #3b82f6 !important;
+}
+
+.recurrence-description {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+}
+
+.recurrence-description-text {
+    font-size: 14px;
+    color: #374151;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.recurrence-end-date-controls {
+    margin-top: 8px;
+}
+
+
