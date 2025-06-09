@@ -1,5 +1,6 @@
 {
     "namespace": "PowerDev",
     "controlName": "RecurrencePicker",
-    "controlDir": "RecurrencePicker"
+    "controlDir": "RecurrencePicker",
+    "outDir": "./out/controls"
 }

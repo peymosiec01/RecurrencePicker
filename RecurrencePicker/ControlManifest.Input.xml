@@ -1,21 +1,16 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <manifest>
-  <control namespace="PowerDev" constructor="RecurrencePicker" version="1.0.1" display-name-key="RecurrencePicker_Display_Key" description-key="RecurrencePicker_Desc_Key" control-type="standard">
+  <control namespace="PowerDev" constructor="RecurrencePicker" version="1.0.7" display-name-key="RecurrencePicker_Display_Key" description-key="RecurrencePicker_Desc_Key" control-type="standard">
     <!-- Property node identifies a specific, configurable piece of data that the control expects from CDS -->
     <property name="recurrenceData" display-name-key="RecurrenceData_Display_Key2" description-key="RecurrenceData_Desc_Key2" of-type="SingleLine.Text" usage="bound" required="false" />
     <property name="isVisible" display-name-key="isVisible_Display_Key" description-key="isVisible_Desc_Key" of-type="TwoOptions" usage="bound" required="false" />
-
-
     <resources>
       <code path="index.ts" order="1" />
       <css path="css/RecurrencePickerControl.css" order="1" />
       <resx path="strings/RecurrencePickerControl.1033.resx" version="1.0.0" />
     </resources>
-
     <feature-usage>
       <uses-feature name="Device.pickFile" required="false" />
     </feature-usage>
-
-  
   </control>
 </manifest>
