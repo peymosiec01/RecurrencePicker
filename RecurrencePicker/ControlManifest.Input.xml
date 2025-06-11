@@ -4,6 +4,7 @@
     <!-- Property node identifies a specific, configurable piece of data that the control expects from CDS -->
     <property name="recurrenceData" display-name-key="RecurrenceData_Display_Key2" description-key="RecurrenceData_Desc_Key2" of-type="SingleLine.Text" usage="bound" required="false" />
     <property name="isVisible" display-name-key="isVisible_Display_Key" description-key="isVisible_Desc_Key" of-type="TwoOptions" usage="bound" required="false" />
+    <property name="recurrenceDescription" display-name-key="RecurrenceDescription_Display_Key" description-key="RecurrenceDescription_Desc_Key" of-type="SingleLine.Text" usage="output" required="false" />
     <resources>
       <code path="index.ts" order="1" />
       <css path="css/RecurrencePickerControl.css" order="1" />

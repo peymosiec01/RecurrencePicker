@@ -10,7 +10,8 @@ export interface IRecurrenceData {
     yearlyOption: string;
     endDate: string | null;
     hasEndDate: boolean;
-    rrule?: string; // Add RRULE string
+    rrule?: string; 
+    description?: string; 
 }
 
 interface IRecurrencePickerProps {
@@ -25,7 +26,79 @@ interface IDatePickerProps {
     value: string;
     onChange: (value: string) => void;
     placeholder?: string;
+    minDate?: string;
+    maxDate?: string;
 }
+
+// Date utility functions
+const DateUtils = {
+    // Get today's date in UK format (DD/MM/YYYY)
+    getTodayUK(): string {
+        const today = new Date();
+        return today.toLocaleDateString('en-GB');
+    },
+
+    // Get date one year from today in UK format
+    getOneYearFromTodayUK(): string {
+        const oneYearFromNow = new Date();
+        oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
+        return oneYearFromNow.toLocaleDateString('en-GB');
+    },
+
+    // Convert UK date format (DD/MM/YYYY) to Date object
+    parseUKDate(dateStr: string): Date {
+        if (!dateStr) return new Date();
+        const parts = dateStr.split('/');
+        if (parts.length === 3) {
+            const [day, month, year] = parts;
+            return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+        }
+        return new Date();
+    },
+
+    // Get one year from a specific date
+    getOneYearFromDateUK(dateStr: string): string {
+        const baseDate = this.parseUKDate(dateStr);
+        const oneYearLater = new Date(baseDate);
+        oneYearLater.setFullYear(oneYearLater.getFullYear() + 1);
+        return oneYearLater.toLocaleDateString('en-GB');
+    },
+
+    // Convert Date to UK format (DD/MM/YYYY)
+    formatUKDate(date: Date): string {
+        return date.toLocaleDateString('en-GB');
+    },
+
+    // Check if a date string is valid
+    isValidDate(dateStr: string): boolean {
+        if (!dateStr) return false;
+        const date = this.parseUKDate(dateStr);
+        return !isNaN(date.getTime());
+    },
+
+    // Check if date1 is before date2
+    isBefore(date1Str: string, date2Str: string): boolean {
+        const date1 = this.parseUKDate(date1Str);
+        const date2 = this.parseUKDate(date2Str);
+        return date1 < date2;
+    },
+
+    // Check if date is today or in the future
+    isTodayOrFuture(dateStr: string): boolean {
+        const date = this.parseUKDate(dateStr);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        date.setHours(0, 0, 0, 0);
+        return date >= today;
+    },
+
+    // Get today's date as Date object with time set to start of day
+    getTodayDate(): Date {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        return today;
+    }
+};
 
 // RRULE Utility Functions
 class RRuleConverter {
@@ -40,36 +113,20 @@ class RRuleConverter {
     };
 
     private static weekdayToDayKey: Record<number, string> = {
-        6: 'Su', // Sunday
-        0: 'M',  // Monday
-        1: 'T',  // Tuesday
-        2: 'W',  // Wednesday
-        3: 'Th', // Thursday
-        4: 'F',  // Friday
-        5: 'S'   // Saturday
+        0: 'Su', // Sunday
+        1: 'M',  // Monday
+        2: 'T',  // Tuesday
+        3: 'W',  // Wednesday
+        4: 'Th', // Thursday
+        5: 'F',  // Friday
+        6: 'S'   // Saturday
     };
-
-    // Convert UK date format (DD/MM/YYYY) to Date object
-    private static parseUKDate(dateStr: string): Date {
-        if (!dateStr) return new Date();
-        const parts = dateStr.split('/');
-        if (parts.length === 3) {
-            const [day, month, year] = parts;
-            return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-        }
-        return new Date();
-    }
-
-    // Convert Date to UK format (DD/MM/YYYY)
-    private static formatUKDate(date: Date): string {
-        return date.toLocaleDateString('en-GB');
-    }
 
     // Convert our data structure to RRULE
     static toRRule(data: IRecurrenceData): string {
         try {
-            const startDate = this.parseUKDate(data.startDate);
-            const endDate = data.hasEndDate && data.endDate ? this.parseUKDate(data.endDate) : null;
+            const startDate = DateUtils.parseUKDate(data.startDate);
+            const endDate = data.hasEndDate && data.endDate ? DateUtils.parseUKDate(data.endDate) : null;
 
             let frequency: Frequency;
             const options: RRule.Options = {
@@ -155,8 +212,8 @@ class RRuleConverter {
             const rule = RRule.fromString(cleanRruleStr);
             const options = rule.options;
             
-            const startDate = startDateStr || this.formatUKDate(options.dtstart || new Date());
-            const endDate = options.until ? this.formatUKDate(options.until) : null;
+            const startDate = startDateStr || DateUtils.formatUKDate(options.dtstart || new Date());
+            const endDate = options.until ? DateUtils.formatUKDate(options.until) : null;
             
             let pattern: string;
             let selectedDays: string[] = [];
@@ -212,7 +269,7 @@ class RRuleConverter {
             console.error('Error parsing RRULE:', error, 'Input:', rruleStr);
             // Return default data structure
             return {
-                startDate: startDateStr || this.formatUKDate(new Date()),
+                startDate: startDateStr || DateUtils.getTodayUK(),
                 pattern: 'day',
                 every: 1,
                 selectedDays: [],
@@ -257,8 +314,21 @@ class RRuleConverter {
 
     // Helper methods
     private static getWeekOfMonth(date: Date): number {
-        const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
-        return Math.ceil((date.getDate() + firstDay.getDay()) / 7);
+        const year = date.getFullYear();
+        const month = date.getMonth();
+        const dayOfWeek = date.getDay();
+        const dateOfMonth = date.getDate();
+        
+        // Count how many times this weekday has occurred up to and including this date
+        let count = 0;
+        for (let day = 1; day <= dateOfMonth; day++) {
+            const testDate = new Date(year, month, day);
+            if (testDate.getDay() === dayOfWeek) {
+                count++;
+            }
+        }
+        
+        return count;
     }
 
     private static isLastWeekOfMonth(date: Date): boolean {
@@ -268,15 +338,30 @@ class RRuleConverter {
     }
 }
 
-const DatePicker: React.FC<IDatePickerProps> = ({ value, onChange, placeholder = "Select date" }) => {
+const DatePicker: React.FC<IDatePickerProps> = ({ 
+    value, 
+    onChange, 
+    placeholder = "Select date",
+    minDate,
+    maxDate 
+}) => {
     const [isOpen, setIsOpen] = React.useState(false);
     const [displayValue, setDisplayValue] = React.useState(value || "");
+    const [error, setError] = React.useState<string>("");
     const pickerRef = React.useRef<HTMLDivElement>(null);
+
+    React.useEffect(() => {
+        setDisplayValue(value || "");
+        setError("");
+    }, [value]);
 
     React.useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (pickerRef.current && !pickerRef.current.contains(event.target as Node)) {
-                setIsOpen(false);
+                const target = event.target as Element;
+                if (!target.closest('.recurrence-date-native')) {
+                    setIsOpen(false);
+                }
             }
         };
         document.addEventListener('mousedown', handleClickOutside);
@@ -293,11 +378,39 @@ const DatePicker: React.FC<IDatePickerProps> = ({ value, onChange, placeholder =
         }
     };
 
+    const validateDate = (dateStr: string): string => {
+        if (!dateStr) return "";
+
+        if (!DateUtils.isValidDate(dateStr)) {
+            return "Invalid date format";
+        }
+
+        if (minDate && !DateUtils.isBefore(minDate, dateStr) && dateStr !== minDate) {
+            return `Date must be after ${minDate}`;
+        }
+
+        if (maxDate && !DateUtils.isBefore(dateStr, maxDate) && dateStr !== maxDate) {
+            return `Date must be before ${maxDate}`;
+        }
+
+        return "";
+    };
+
     const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const selectedDate = e.target.value;
         const formattedDate = formatDate(selectedDate);
+        const validationError = validateDate(formattedDate);
+        
         setDisplayValue(formattedDate);
-        onChange(formattedDate);
+        setError(validationError);
+        
+        if (!validationError) {
+            onChange(formattedDate);
+        }
+    };
+
+    // Add method to close picker manually
+    const closePicker = () => {
         setIsOpen(false);
     };
 
@@ -321,19 +434,34 @@ const DatePicker: React.FC<IDatePickerProps> = ({ value, onChange, placeholder =
 
     const handleTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         setDisplayValue(e.target.value);
+        setError("");
     };
 
     const handleTextBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-        const formattedDate = formatDate(e.target.value);
+        const inputValue = e.target.value;
+        if (!inputValue) {
+            setDisplayValue("");
+            setError("");
+            onChange("");
+            return;
+        }
+
+        const formattedDate = formatDate(inputValue);
+        const validationError = validateDate(formattedDate);
+        
         setDisplayValue(formattedDate);
-        onChange(formattedDate);
+        setError(validationError);
+        
+        if (!validationError) {
+            onChange(formattedDate);
+        }
     };
 
     return (
         <div 
             className="recurrence-date-picker" 
             ref={pickerRef}
-            style={{ display: 'inline-block' }}
+            style={{ display: 'inline-block', marginRight: 'auto' }}
         >
             <input
                 type="text"
@@ -346,28 +474,41 @@ const DatePicker: React.FC<IDatePickerProps> = ({ value, onChange, placeholder =
                 style={{
                     cursor: 'pointer',
                     background: 'transparent',
-                    border: 'none',
+                    border: error ? '1px solid #dc3545' : 'none',
                     outline: 'none',
                     padding: '8px 0',
                     fontSize: '14px',
-                    color: '#374151',
+                    color: error ? '#dc3545' : '#374151',
                     textDecoration: 'underline',
-                    textDecorationColor: 'transparent',
+                    textDecorationColor: error ? '#dc3545' : 'transparent',
                     transition: 'text-decoration-color 0.2s',
-                    display: 'inline'
+                    display: 'inline',
+                    width: '110px'
                 }}
                 onMouseEnter={(e) => {
-                    e.currentTarget.style.textDecorationColor = '#3b82f6';
+                    e.currentTarget.style.textDecorationColor = error ? '#dc3545' : '#3b82f6';
                 }}
                 onMouseLeave={(e) => {
-                    e.currentTarget.style.textDecorationColor = 'transparent';
+                    e.currentTarget.style.textDecorationColor = error ? '#dc3545' : 'transparent';
                 }}
                 onFocus={(e) => {
-                    e.currentTarget.style.textDecorationColor = '#3b82f6';
+                    e.currentTarget.style.textDecorationColor = error ? '#dc3545' : '#3b82f6';
                 }}
             />
 
-            {isOpen && (
+            {error && (
+                <div style={{
+                    position: 'absolute',
+                    fontSize: '12px',
+                    color: '#dc3545',
+                    marginTop: '2px',
+                    zIndex: 1000
+                }}>
+                    {error}
+                </div>
+            )}
+
+            {/* {isOpen && (
                 <div className="recurrence-date-dropdown">
                     <input
                         type="date"
@@ -375,9 +516,42 @@ const DatePicker: React.FC<IDatePickerProps> = ({ value, onChange, placeholder =
                         onChange={handleDateChange}
                         className="recurrence-date-native"
                         autoFocus
+                        min={minDate ? convertToInputFormat(minDate) : undefined}
+                        max={maxDate ? convertToInputFormat(maxDate) : undefined}
                     />
                 </div>
+            )} */}
+            {isOpen && (
+                <div className="recurrence-date-dropdown">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px' }}>
+                        <input
+                            type="date"
+                            value={convertToInputFormat(displayValue)}
+                            onChange={handleDateChange}
+                            className="recurrence-date-native"
+                            autoFocus
+                            style={{ border: 'none', outline: 'none', background: 'transparent' }}
+                            min={minDate ? convertToInputFormat(minDate) : undefined}
+                            max={maxDate ? convertToInputFormat(maxDate) : undefined}
+                        />
+                        <button
+                            onClick={closePicker}
+                            style={{
+                                background: '#007acc',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '4px',
+                                padding: '4px 8px',
+                                fontSize: '12px',
+                                cursor: 'pointer'
+                            }}
+                        >
+                            ✓
+                        </button>
+                    </div>
+                </div>
             )}
+            
         </div>
     );
 };
@@ -387,29 +561,91 @@ const RecurrencePicker: React.FC<{
     onCancel: () => void;
     initialData?: IRecurrenceData;
 }> = ({ onSet, onCancel, initialData = {} as IRecurrenceData }) => {
-    const [startDate, setStartDate] = React.useState(initialData?.startDate || getCurrentDate());
+    // Use system defaults for dates
+    const getDefaultStartDate = () => initialData?.startDate || DateUtils.getTodayUK();
+    const getDefaultEndDate = () => initialData?.endDate || DateUtils.getOneYearFromTodayUK();
+
+    const [startDate, setStartDate] = React.useState(getDefaultStartDate());
     const [recurrencePattern, setRecurrencePattern] = React.useState(initialData?.pattern || "day");
     const [everyValue, setEveryValue] = React.useState(initialData?.every || 1);
     const [selectedDays, setSelectedDays] = React.useState<string[]>(initialData?.selectedDays || []);
     const [monthlyOption, setMonthlyOption] = React.useState(initialData?.monthlyOption || "day");
     const [yearlyOption, setYearlyOption] = React.useState(initialData?.yearlyOption || "date");
-    const [endDate, setEndDate] = React.useState(initialData?.endDate || getDefaultEndDate());
+    const [endDate, setEndDate] = React.useState(getDefaultEndDate());
     const [hasEndDate, setHasEndDate] = React.useState(initialData?.hasEndDate !== false);
     const [rrulePreview, setRrulePreview] = React.useState<string>("");
+    const [dateErrors, setDateErrors] = React.useState<{start?: string, end?: string}>({});
 
-    function getCurrentDate(): string {
-        const today = new Date();
-        return today.toLocaleDateString('en-GB');
-    }
+    // Store initial values for reset functionality
+    const initialValues = React.useRef({
+        startDate: getDefaultStartDate(),
+        pattern: initialData?.pattern || "day",
+        every: initialData?.every || 1,
+        selectedDays: initialData?.selectedDays || [],
+        monthlyOption: initialData?.monthlyOption || "day",
+        yearlyOption: initialData?.yearlyOption || "date",
+        endDate: getDefaultEndDate(),
+        hasEndDate: initialData?.hasEndDate !== false
+    });
 
-    function getDefaultEndDate(): string {
-        const date = new Date();
-        date.setMonth(date.getMonth() + 3); // 3 months from now
-        return date.toLocaleDateString('en-GB');
-    }
+    // Validation function
+    const validateDates = React.useCallback(() => {
+        const errors: {start?: string, end?: string} = {};
+
+        // Validate start date
+        if (!DateUtils.isTodayOrFuture(startDate)) {
+            errors.start = "Start date cannot be in the past";
+        }
+
+        // Validate end date if enabled
+        if (hasEndDate && endDate) {
+            if (!DateUtils.isValidDate(endDate)) {
+                errors.end = "Invalid end date";
+            } else if (!DateUtils.isBefore(startDate, endDate)) {
+                errors.end = "End date must be after start date";
+            }
+        }
+
+        setDateErrors(errors);
+        return Object.keys(errors).length === 0;
+    }, [startDate, endDate, hasEndDate]);
+
+    // Validate dates whenever they change
+    React.useEffect(() => {
+        validateDates();
+    }, [validateDates]);
+
+    // Handle start date change with validation
+    const handleStartDateChange = (newStartDate: string) => {
+        setStartDate(newStartDate);
+        
+        // Always update end date to be one year from new start date
+        if (DateUtils.isValidDate(newStartDate)) {
+            const newEndDate = DateUtils.getOneYearFromDateUK(newStartDate);
+            setEndDate(newEndDate);
+        }
+    };
+
+    // Handle end date change with validation
+    const handleEndDateChange = (newEndDate: string) => {
+        setEndDate(newEndDate);
+    };
+
+    // Handle enabling end date
+    const handleEnableEndDate = () => {
+        setHasEndDate(true);
+        if (!endDate || !DateUtils.isBefore(startDate, endDate)) {
+            // Set default end date to one year from start date
+            const oneYearFromStart = new Date(DateUtils.parseUKDate(startDate));
+            oneYearFromStart.setFullYear(oneYearFromStart.getFullYear() + 1);
+            setEndDate(DateUtils.formatUKDate(oneYearFromStart));
+        }
+    };
 
     // Update RRULE preview whenever settings change
     React.useEffect(() => {
+        if (!validateDates()) return;
+
         const currentData: IRecurrenceData = {
             startDate,
             pattern: recurrencePattern,
@@ -427,7 +663,7 @@ const RecurrencePicker: React.FC<{
         } catch (error) {
             setRrulePreview("Error generating RRULE");
         }
-    }, [startDate, recurrencePattern, everyValue, selectedDays, monthlyOption, yearlyOption, endDate, hasEndDate]);
+    }, [startDate, recurrencePattern, everyValue, selectedDays, monthlyOption, yearlyOption, endDate, hasEndDate, validateDates]);
 
     // Helper function to parse date string and get date components
     const getDateComponents = (dateStr: string) => {
@@ -453,11 +689,22 @@ const RecurrencePicker: React.FC<{
 
     // Helper function to get week of month (1st, 2nd, 3rd, 4th, or last)
     const getWeekOfMonth = (date: Date): string => {
-        const firstDay = new Date(date.getFullYear(), date.getMonth(), 1);
-        const weekNumber = Math.ceil((date.getDate() + firstDay.getDay()) / 7);
+        const year = date.getFullYear();
+        const month = date.getMonth();
+        const dayOfWeek = date.getDay();
+        const dateOfMonth = date.getDate();
+        
+        // Count how many times this weekday has occurred up to and including this date
+        let count = 0;
+        for (let day = 1; day <= dateOfMonth; day++) {
+            const testDate = new Date(year, month, day);
+            if (testDate.getDay() === dayOfWeek) {
+                count++;
+            }
+        }
         
         const ordinals = ['1st', '2nd', '3rd', '4th', '5th'];
-        return ordinals[weekNumber - 1] || '5th';
+        return ordinals[count - 1] || '5th';
     };
 
     // Helper function to check if date is in the last week of the month
@@ -526,7 +773,6 @@ const RecurrencePicker: React.FC<{
 
     const getRecurrenceText = (): string => {
         try {
-            console.log("rrulePreview", rrulePreview);
             return RRuleConverter.getDescription(rrulePreview);
         } catch {
             const components = getDateComponents(startDate);
@@ -577,7 +823,12 @@ const RecurrencePicker: React.FC<{
         }
     };
 
+   // Update handleSave to include validation and description
     const handleSave = () => {
+        if (!validateDates()) {
+            return; // Don't save if validation fails
+        }
+
         const recurrenceData: IRecurrenceData = {
             startDate,
             pattern: recurrencePattern,
@@ -586,11 +837,51 @@ const RecurrencePicker: React.FC<{
             monthlyOption,
             yearlyOption,
             endDate: hasEndDate ? endDate : null,
-            hasEndDate,
-            rrule: rrulePreview
+            hasEndDate
         };
 
+        try {
+            // Generate fresh RRULE and description
+            const rrule = RRuleConverter.toRRule(recurrenceData);
+            recurrenceData.rrule = rrule;
+            recurrenceData.description = RRuleConverter.getDescription(rrule);
+        } catch (error) {
+            console.error('Error generating RRULE:', error);
+            recurrenceData.rrule = rrulePreview;
+            recurrenceData.description = RRuleConverter.getDescription(rrulePreview);
+        }
+
         onSet(recurrenceData);
+    };
+
+    const handleDiscard = () => {
+        setStartDate(initialValues.current.startDate);
+        setRecurrencePattern(initialValues.current.pattern);
+        setEveryValue(initialValues.current.every);
+        setSelectedDays(initialValues.current.selectedDays);
+        setMonthlyOption(initialValues.current.monthlyOption);
+        setYearlyOption(initialValues.current.yearlyOption);
+        setEndDate(initialValues.current.endDate);
+        setHasEndDate(initialValues.current.hasEndDate);
+        onCancel();
+    };
+
+    
+    // Add Remove handler to clear everything
+    const handleRemove = () => {
+        const emptyData: IRecurrenceData = {
+            startDate: DateUtils.getTodayUK(),
+            pattern: "day",
+            every: 1,
+            selectedDays: [],
+            monthlyOption: "day",
+            yearlyOption: "date",
+            endDate: null,
+            hasEndDate: false,
+            rrule: "",
+            description: ""
+        };
+        onSet(emptyData);
     };
 
     // Get the dynamic options
@@ -619,12 +910,27 @@ const RecurrencePicker: React.FC<{
                         <label className="recurrence-repeat-label">
                             <span className="recurrence-form-label">Start task on</span>
                         </label>
-                        <DatePicker
-                            value={startDate}
-                            onChange={setStartDate}
-                            placeholder="DD/MM/YYYY"
-                        />
+                        <div style={{
+                            alignItems: 'flex-start',
+                            display: 'inline-flex'
+                        }}>
+                            <DatePicker
+                                value={startDate}
+                                onChange={handleStartDateChange} 
+                                placeholder="DD/MM/YYYY"
+                            />
+                            {dateErrors.start && (
+                                <div style={{
+                                    fontSize: '12px',
+                                    color: '#dc3545',
+                                    marginTop: '4px'
+                                }}>
+                                    {dateErrors.start}
+                                </div>
+                            )}
+                        </div>
                     </div>
+                    
 
                     {/* Repeat Pattern Row */}
                     <div className="recurrence-form-row">
@@ -750,35 +1056,53 @@ const RecurrencePicker: React.FC<{
                     <div className="recurrence-description">
                         <div className="recurrence-description-text" style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '4px' }}>
                             <span>{getRecurrenceText()}</span>
-                            {hasEndDate && (
-                                <DatePicker
-                                    value={endDate}
-                                    onChange={setEndDate}
-                                    placeholder="Select end date"
-                                />
-                            )}
                         </div>
 
-                        <div className="recurrence-end-date-controls">
+                        <div className="recurrence-end-date-controls" style={{marginLeft: 'auto'}}>
+                            {hasEndDate && (
+                                <div className="">
+                                    <DatePicker
+                                        value={endDate}
+                                        onChange={handleEndDateChange}
+                                        placeholder="Select end date"
+                                    />
+                                    <button
+                                        onClick={() => setHasEndDate(false)}
+                                        className="recurrence-link-button"
+                                        style={{
+                                            background: '#007acc',
+                                            color: 'white',
+                                            border: 'none',
+                                            borderRadius: '4px',
+                                            padding: '4px 8px',
+                                            fontSize: '12px',
+                                            cursor: 'pointer'
+                                        }}
+                                    >
+                                        x
+                                    </button>
+                                </div>
+                            )}
                             {!hasEndDate && (
                                 <button
-                                    onClick={() => setHasEndDate(true)}
+                                    onClick={handleEnableEndDate}
                                     className="recurrence-link-button"
                                     type="button"
                                 >
                                     Choose an end date
                                 </button>
                             )}
-                            {hasEndDate && (
-                                <button
-                                    onClick={() => setHasEndDate(false)}
-                                    className="recurrence-link-button"
-                                    type="button"
-                                >
-                                    Remove end date
-                                </button>
-                            )}
                         </div>
+                        {dateErrors.end && (
+                            <div style={{
+                                fontSize: '12px',
+                                color: '#dc3545',
+                                marginTop: '4px',
+                                marginLeft: 'auto'
+                            }}>
+                                {dateErrors.end}
+                            </div>
+                        )}
                     </div>
 
                     {/* RRULE Preview */}
@@ -787,7 +1111,8 @@ const RecurrencePicker: React.FC<{
                         padding: '12px', 
                         background: '#f8f9fa', 
                         borderRadius: '4px',
-                        border: '1px solid #e9ecef'
+                        border: '1px solid #e9ecef',
+                        display: 'none'
                     }}>
                         <div style={{ fontSize: '12px', fontWeight: 'bold', marginBottom: '4px' }}>RRULE:</div>
                         <div style={{ fontSize: '11px', fontFamily: 'monospace', wordBreak: 'break-all' }}>
@@ -803,19 +1128,24 @@ const RecurrencePicker: React.FC<{
                         onClick={handleSave}
                         className="recurrence-button recurrence-button-primary"
                         type="button"
+                        disabled={Object.keys(dateErrors).length > 0}
+                        style={{
+                            opacity: Object.keys(dateErrors).length > 0 ? 0.6 : 1,
+                            cursor: Object.keys(dateErrors).length > 0 ? 'not-allowed' : 'pointer'
+                        }}
                     >
                         Save
                     </button>
                     <div className="recurrence-footer-buttons">
                         <button
-                            onClick={onCancel}
+                            onClick={handleDiscard} // Changed from onCancel to handleDiscard
                             className="recurrence-button recurrence-button-secondary"
                             type="button"
                         >
                             Discard
                         </button>
                         <button
-                            onClick={() => console.log('Remove series')}
+                            onClick={handleRemove} // Changed to handleRemove
                             className="recurrence-button recurrence-button-danger"
                             type="button"
                         >
@@ -898,7 +1228,8 @@ export const RecurrencePickerComponent: React.FC<IRecurrencePickerProps> = ({
                     padding: '16px', 
                     border: '1px solid #ddd', 
                     borderRadius: '8px',
-                    backgroundColor: '#f9f9f9'
+                    backgroundColor: '#f9f9f9',
+                    display: "none"
                 }}>
                     <h3 className="settings-title" style={{ 
                         margin: '0 0 12px 0', 
@@ -973,7 +1304,8 @@ export const RecurrencePickerComponent: React.FC<IRecurrencePickerProps> = ({
                             border: '1px solid #ccc', 
                             borderRadius: '4px',
                             marginTop: '8px',
-                            overflow: 'auto'
+                            overflow: 'auto',
+                            display: 'none'
                         }}>
                             {JSON.stringify(initialData, null, 2)}
                         </pre>
@@ -982,7 +1314,7 @@ export const RecurrencePickerComponent: React.FC<IRecurrencePickerProps> = ({
             )}
 
             {/* RRULE Import Section */}
-            <div style={{ marginTop: '16px' }}>
+            <div style={{ marginTop: '16px', display: 'none' }}>
                 <h4 style={{ fontSize: '14px', marginBottom: '8px' }}>Import RRULE:</h4>
                 <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
                     <input

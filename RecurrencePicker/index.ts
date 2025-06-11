@@ -60,7 +60,8 @@ export class RecurrencePicker implements ComponentFramework.StandardControl<IInp
     public getOutputs(): IOutputs {
         return {
             recurrenceData: this._recurrenceData ? JSON.stringify(this._recurrenceData) : "",
-            isVisible: this._isVisible
+            isVisible: this._isVisible,
+            recurrenceDescription: this._recurrenceData?.description || ""
         };
     }
 
