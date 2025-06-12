@@ -5,6 +5,11 @@
     <property name="recurrenceData" display-name-key="RecurrenceData_Display_Key2" description-key="RecurrenceData_Desc_Key2" of-type="SingleLine.Text" usage="bound" required="false" />
     <property name="isVisible" display-name-key="isVisible_Display_Key" description-key="isVisible_Desc_Key" of-type="TwoOptions" usage="bound" required="false" />
     <property name="recurrenceDescription" display-name-key="RecurrenceDescription_Display_Key" description-key="RecurrenceDescription_Desc_Key" of-type="SingleLine.Text" usage="output" required="false" />
+    <property name="dateLocale" display-name-key="myDateLocale" description-key="List of date locales" usage="input" of-type="Enum" required="false">
+      <value name="en-GB" display-name-key="ukDateLocale" description-key="United Kingdom Date Locale">en-GB</value>
+      <value name="en-US" display-name-key="usaDateLocale" description-key="United States Date Locale">en-US</value>
+    </property>
+
     <resources>
       <code path="index.ts" order="1" />
       <css path="css/RecurrencePickerControl.css" order="1" />

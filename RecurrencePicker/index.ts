@@ -2,6 +2,8 @@ import { IInputs, IOutputs } from "./generated/ManifestTypes";
 import * as React from "react";
 import * as ReactDOM from 'react-dom';
 import { RecurrencePickerComponent, IRecurrenceData } from "./RecurrencePickerComponent";
+import { createDateUtils, setDateUtils } from "./DateUtils";
+
 
 export class RecurrencePicker implements ComponentFramework.StandardControl<IInputs, IOutputs> {
     private _container: HTMLDivElement;
@@ -9,6 +11,7 @@ export class RecurrencePicker implements ComponentFramework.StandardControl<IInp
     private _notifyOutputChanged: () => void;
     private _recurrenceData: IRecurrenceData | null = null;
     private _isVisible = false;
+    private _dateLocale = "en-GB"; // default to en-GB
 
     constructor() {
         // Constructor
@@ -16,42 +19,31 @@ export class RecurrencePicker implements ComponentFramework.StandardControl<IInp
 
     public init(context: ComponentFramework.Context<IInputs>, notifyOutputChanged: () => void, state: ComponentFramework.Dictionary, container: HTMLDivElement): void {
         this._context = context;
+        console.log("Initializing RecurrencePicker with context:", context);
         this._container = container;
         this._notifyOutputChanged = notifyOutputChanged;
         this._isVisible = context.parameters.isVisible?.raw ?? false;
+        this._dateLocale = context.parameters.dateLocale?.raw; // default to en-GB
 
-        // Parse initial recurrence data if available
-        if (context.parameters.recurrenceData?.raw) {
-            try {
-                this._recurrenceData = JSON.parse(context.parameters.recurrenceData.raw);
-            } catch (error) {
-                console.error("Error parsing recurrence data:", error);
-                this._recurrenceData = null;
-            }
-        }
+        const utils = createDateUtils(this._dateLocale);
+        setDateUtils(utils);
 
         this.renderComponent();
     }
 
     public updateView(context: ComponentFramework.Context<IInputs>): void {
         this._context = context;
-        
+        this._dateLocale = context.parameters.dateLocale?.raw; // default to en-GB
+
+        // Update date utils if locale changes
+        console.log("Updating date utils with locale:", this._dateLocale);
+        const utils = createDateUtils(this._dateLocale);
+        setDateUtils(utils);
+
         // Update visibility
         const newVisibility = context.parameters.isVisible?.raw ?? false;
         if (newVisibility !== this._isVisible) {
             this._isVisible = newVisibility;
-        }
-
-        // Update recurrence data if changed
-        if (context.parameters.recurrenceData?.raw) {
-            try {
-                const newData = JSON.parse(context.parameters.recurrenceData.raw);
-                if (JSON.stringify(newData) !== JSON.stringify(this._recurrenceData)) {
-                    this._recurrenceData = newData;
-                }
-            } catch (error) {
-                console.error("Error parsing recurrence data:", error);
-            }
         }
 
         this.renderComponent();
@@ -72,6 +64,7 @@ export class RecurrencePicker implements ComponentFramework.StandardControl<IInp
     private renderComponent(): void {
         const props = {
             isVisible: this._isVisible,
+            dateLocale: this._dateLocale,
             initialData: this._recurrenceData,
             onSet: this.handleSetRecurrence.bind(this),
             onCancel: this.handleCancel.bind(this),
@@ -82,7 +75,9 @@ export class RecurrencePicker implements ComponentFramework.StandardControl<IInp
             React.createElement(RecurrencePickerComponent, props),
             this._container
         );
+        console.log("Rendering RecurrencePickerComponent with props:", props);
     }
+
 
     private handleSetRecurrence(data: IRecurrenceData): void {
         this._recurrenceData = data;

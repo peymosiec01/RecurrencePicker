@@ -1,5 +1,6 @@
 import * as React from 'react';
 import { RRule, Frequency, Weekday, RRuleStrOptions } from 'rrule';
+import { getDateUtils } from './DateUtils';
 
 export interface IRecurrenceData {
     startDate: string;
@@ -12,10 +13,12 @@ export interface IRecurrenceData {
     hasEndDate: boolean;
     rrule?: string; 
     description?: string; 
+    locale?: string;
 }
 
 interface IRecurrencePickerProps {
     isVisible: boolean;
+    dateLocale: string;
     initialData: IRecurrenceData | null;
     onSet: (data: IRecurrenceData) => void;
     onCancel: () => void;
@@ -28,77 +31,9 @@ interface IDatePickerProps {
     placeholder?: string;
     minDate?: string;
     maxDate?: string;
+    showTime?: boolean;
+    locale?: string;
 }
-
-// Date utility functions
-const DateUtils = {
-    // Get today's date in UK format (DD/MM/YYYY)
-    getTodayUK(): string {
-        const today = new Date();
-        return today.toLocaleDateString('en-GB');
-    },
-
-    // Get date one year from today in UK format
-    getOneYearFromTodayUK(): string {
-        const oneYearFromNow = new Date();
-        oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
-        return oneYearFromNow.toLocaleDateString('en-GB');
-    },
-
-    // Convert UK date format (DD/MM/YYYY) to Date object
-    parseUKDate(dateStr: string): Date {
-        if (!dateStr) return new Date();
-        const parts = dateStr.split('/');
-        if (parts.length === 3) {
-            const [day, month, year] = parts;
-            return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-        }
-        return new Date();
-    },
-
-    // Get one year from a specific date
-    getOneYearFromDateUK(dateStr: string): string {
-        const baseDate = this.parseUKDate(dateStr);
-        const oneYearLater = new Date(baseDate);
-        oneYearLater.setFullYear(oneYearLater.getFullYear() + 1);
-        return oneYearLater.toLocaleDateString('en-GB');
-    },
-
-    // Convert Date to UK format (DD/MM/YYYY)
-    formatUKDate(date: Date): string {
-        return date.toLocaleDateString('en-GB');
-    },
-
-    // Check if a date string is valid
-    isValidDate(dateStr: string): boolean {
-        if (!dateStr) return false;
-        const date = this.parseUKDate(dateStr);
-        return !isNaN(date.getTime());
-    },
-
-    // Check if date1 is before date2
-    isBefore(date1Str: string, date2Str: string): boolean {
-        const date1 = this.parseUKDate(date1Str);
-        const date2 = this.parseUKDate(date2Str);
-        return date1 < date2;
-    },
-
-    // Check if date is today or in the future
-    isTodayOrFuture(dateStr: string): boolean {
-        const date = this.parseUKDate(dateStr);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        date.setHours(0, 0, 0, 0);
-        return date >= today;
-    },
-
-    // Get today's date as Date object with time set to start of day
-    getTodayDate(): Date {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        return today;
-    }
-};
 
 // RRULE Utility Functions
 class RRuleConverter {
@@ -125,8 +60,9 @@ class RRuleConverter {
     // Convert our data structure to RRULE
     static toRRule(data: IRecurrenceData): string {
         try {
-            const startDate = DateUtils.parseUKDate(data.startDate);
-            const endDate = data.hasEndDate && data.endDate ? DateUtils.parseUKDate(data.endDate) : null;
+            console.log('Converting data to RRULE:', data);
+            const startDate = getDateUtils().parseDate(data.startDate);
+            const endDate = data.hasEndDate && data.endDate ? getDateUtils().parseDate(data.endDate) : null;
 
             let frequency: Frequency;
             const options: RRule.Options = {
@@ -212,8 +148,8 @@ class RRuleConverter {
             const rule = RRule.fromString(cleanRruleStr);
             const options = rule.options;
             
-            const startDate = startDateStr || DateUtils.formatUKDate(options.dtstart || new Date());
-            const endDate = options.until ? DateUtils.formatUKDate(options.until) : null;
+            const startDate = startDateStr || getDateUtils().formatDate(options.dtstart || new Date());
+            const endDate = options.until ? getDateUtils().formatDate(options.until) : null;
             
             let pattern: string;
             let selectedDays: string[] = [];
@@ -269,7 +205,7 @@ class RRuleConverter {
             console.error('Error parsing RRULE:', error, 'Input:', rruleStr);
             // Return default data structure
             return {
-                startDate: startDateStr || DateUtils.getTodayUK(),
+                startDate: startDateStr || getDateUtils().getToday(),
                 pattern: 'day',
                 every: 1,
                 selectedDays: [],
@@ -343,7 +279,9 @@ const DatePicker: React.FC<IDatePickerProps> = ({
     onChange, 
     placeholder = "Select date",
     minDate,
-    maxDate 
+    maxDate,
+    locale,
+    showTime = false
 }) => {
     const [isOpen, setIsOpen] = React.useState(false);
     const [displayValue, setDisplayValue] = React.useState(value || "");
@@ -354,6 +292,10 @@ const DatePicker: React.FC<IDatePickerProps> = ({
         setDisplayValue(value || "");
         setError("");
     }, [value]);
+
+    React.useEffect(() => {
+        console.log("Display value updated:", displayValue);
+    }, [displayValue]);
 
     React.useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
@@ -372,7 +314,7 @@ const DatePicker: React.FC<IDatePickerProps> = ({
         if (!dateString) return "";
         try {
             const date = new Date(dateString);
-            return date.toLocaleDateString('en-GB');
+            return date.toLocaleDateString(locale);
         } catch {
             return dateString;
         }
@@ -381,15 +323,15 @@ const DatePicker: React.FC<IDatePickerProps> = ({
     const validateDate = (dateStr: string): string => {
         if (!dateStr) return "";
 
-        if (!DateUtils.isValidDate(dateStr)) {
+        if (!getDateUtils().isValidDate(dateStr)) {
             return "Invalid date format";
         }
 
-        if (minDate && !DateUtils.isBefore(minDate, dateStr) && dateStr !== minDate) {
+        if (minDate && !getDateUtils().isBefore(minDate, dateStr) && dateStr !== minDate) {
             return `Date must be after ${minDate}`;
         }
 
-        if (maxDate && !DateUtils.isBefore(dateStr, maxDate) && dateStr !== maxDate) {
+        if (maxDate && !getDateUtils().isBefore(dateStr, maxDate) && dateStr !== maxDate) {
             return `Date must be before ${maxDate}`;
         }
 
@@ -398,7 +340,8 @@ const DatePicker: React.FC<IDatePickerProps> = ({
 
     const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const selectedDate = e.target.value;
-        const formattedDate = formatDate(selectedDate);
+        const formattedDate = showTime? getDateUtils().formatDateTime(new Date(selectedDate)) : formatDate(selectedDate);
+        console.log("Date input changed:", formattedDate);
         const validationError = validateDate(formattedDate);
         
         setDisplayValue(formattedDate);
@@ -415,6 +358,7 @@ const DatePicker: React.FC<IDatePickerProps> = ({
     };
 
     const convertToInputFormat = (displayDate: string): string => {
+        console.log("Converting display date to input format:", displayDate);
         if (!displayDate) return "";
         try {
             const parts = displayDate.split('/');
@@ -433,28 +377,9 @@ const DatePicker: React.FC<IDatePickerProps> = ({
     };
 
     const handleTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        console.log("Text input changed:", e.target.value);
         setDisplayValue(e.target.value);
         setError("");
-    };
-
-    const handleTextBlur = (e: React.FocusEvent<HTMLInputElement>) => {
-        const inputValue = e.target.value;
-        if (!inputValue) {
-            setDisplayValue("");
-            setError("");
-            onChange("");
-            return;
-        }
-
-        const formattedDate = formatDate(inputValue);
-        const validationError = validateDate(formattedDate);
-        
-        setDisplayValue(formattedDate);
-        setError(validationError);
-        
-        if (!validationError) {
-            onChange(formattedDate);
-        }
     };
 
     return (
@@ -467,7 +392,6 @@ const DatePicker: React.FC<IDatePickerProps> = ({
                 type="text"
                 value={displayValue}
                 onChange={handleTextChange}
-                onBlur={handleTextBlur}
                 onClick={handleTextClick}
                 placeholder={placeholder}
                 className="recurrence-date-input recurrence-date-text-like"
@@ -483,7 +407,7 @@ const DatePicker: React.FC<IDatePickerProps> = ({
                     textDecorationColor: error ? '#dc3545' : 'transparent',
                     transition: 'text-decoration-color 0.2s',
                     display: 'inline',
-                    width: '110px'
+                    width: showTime ? '150px' : '110px'
                 }}
                 onMouseEnter={(e) => {
                     e.currentTarget.style.textDecorationColor = error ? '#dc3545' : '#3b82f6';
@@ -525,7 +449,7 @@ const DatePicker: React.FC<IDatePickerProps> = ({
                 <div className="recurrence-date-dropdown">
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px' }}>
                         <input
-                            type="date"
+                            type={showTime ? "datetime-local" : "date"}
                             value={convertToInputFormat(displayValue)}
                             onChange={handleDateChange}
                             className="recurrence-date-native"
@@ -559,11 +483,14 @@ const DatePicker: React.FC<IDatePickerProps> = ({
 const RecurrencePicker: React.FC<{
     onSet: (data: IRecurrenceData) => void;
     onCancel: () => void;
+    dateLocale: string;
     initialData?: IRecurrenceData;
-}> = ({ onSet, onCancel, initialData = {} as IRecurrenceData }) => {
+}> = ({ onSet, onCancel, dateLocale, initialData = {} as IRecurrenceData }) => {
     // Use system defaults for dates
-    const getDefaultStartDate = () => initialData?.startDate || DateUtils.getTodayUK();
-    const getDefaultEndDate = () => initialData?.endDate || DateUtils.getOneYearFromTodayUK();
+    const getDefaultStartDate = () => initialData?.startDate || getDateUtils().getToday();
+    console.log("Default intialtialData start date:", initialData?.startDate);
+    console.log("Default getDateUtils start date:", getDateUtils().getToday());
+    const getDefaultEndDate = () => initialData?.endDate || getDateUtils().getOneYearFromToday();
 
     const [startDate, setStartDate] = React.useState(getDefaultStartDate());
     const [recurrencePattern, setRecurrencePattern] = React.useState(initialData?.pattern || "day");
@@ -593,15 +520,15 @@ const RecurrencePicker: React.FC<{
         const errors: {start?: string, end?: string} = {};
 
         // Validate start date
-        if (!DateUtils.isTodayOrFuture(startDate)) {
+        if (!getDateUtils().isTodayOrFuture(startDate)) {
             errors.start = "Start date cannot be in the past";
         }
 
         // Validate end date if enabled
         if (hasEndDate && endDate) {
-            if (!DateUtils.isValidDate(endDate)) {
+            if (!getDateUtils().isValidDate(endDate)) {
                 errors.end = "Invalid end date";
-            } else if (!DateUtils.isBefore(startDate, endDate)) {
+            } else if (!getDateUtils().isBefore(startDate, endDate)) {
                 errors.end = "End date must be after start date";
             }
         }
@@ -615,13 +542,15 @@ const RecurrencePicker: React.FC<{
         validateDates();
     }, [validateDates]);
 
+
     // Handle start date change with validation
     const handleStartDateChange = (newStartDate: string) => {
+        console.log("Start date changed to:", newStartDate);
         setStartDate(newStartDate);
         
         // Always update end date to be one year from new start date
-        if (DateUtils.isValidDate(newStartDate)) {
-            const newEndDate = DateUtils.getOneYearFromDateUK(newStartDate);
+        if (getDateUtils().isValidDate(newStartDate)) {
+            const newEndDate = getDateUtils().getOneYearFromDate(newStartDate);
             setEndDate(newEndDate);
         }
     };
@@ -634,11 +563,11 @@ const RecurrencePicker: React.FC<{
     // Handle enabling end date
     const handleEnableEndDate = () => {
         setHasEndDate(true);
-        if (!endDate || !DateUtils.isBefore(startDate, endDate)) {
+        if (!endDate || !getDateUtils().isBefore(startDate, endDate)) {
             // Set default end date to one year from start date
-            const oneYearFromStart = new Date(DateUtils.parseUKDate(startDate));
+            const oneYearFromStart = new Date(getDateUtils().parseDate(startDate));
             oneYearFromStart.setFullYear(oneYearFromStart.getFullYear() + 1);
-            setEndDate(DateUtils.formatUKDate(oneYearFromStart));
+            setEndDate(getDateUtils().formatDate(oneYearFromStart));
         }
     };
 
@@ -665,6 +594,7 @@ const RecurrencePicker: React.FC<{
         }
     }, [startDate, recurrencePattern, everyValue, selectedDays, monthlyOption, yearlyOption, endDate, hasEndDate, validateDates]);
 
+
     // Helper function to parse date string and get date components
     const getDateComponents = (dateStr: string) => {
         try {
@@ -675,8 +605,8 @@ const RecurrencePicker: React.FC<{
                 return {
                     date,
                     dayOfMonth: parseInt(day),
-                    monthName: date.toLocaleDateString('en-US', { month: 'long' }),
-                    dayName: date.toLocaleDateString('en-US', { weekday: 'long' }),
+                    monthName: date.toLocaleDateString(dateLocale, { month: 'long' }),
+                    dayName: date.toLocaleDateString(dateLocale, { weekday: 'long' }),
                     weekOfMonth: getWeekOfMonth(date),
                     isLastWeekOfMonth: isLastWeekOfMonth(date)
                 };
@@ -870,7 +800,7 @@ const RecurrencePicker: React.FC<{
     // Add Remove handler to clear everything
     const handleRemove = () => {
         const emptyData: IRecurrenceData = {
-            startDate: DateUtils.getTodayUK(),
+            startDate: getDateUtils().getToday(),
             pattern: "day",
             every: 1,
             selectedDays: [],
@@ -915,9 +845,11 @@ const RecurrencePicker: React.FC<{
                             display: 'inline-flex'
                         }}>
                             <DatePicker
-                                value={startDate}
+                                locale={dateLocale}
+                                showTime={true}
+                                value={getDateUtils().toHtmlDateTime(startDate)}
                                 onChange={handleStartDateChange} 
-                                placeholder="DD/MM/YYYY"
+                                placeholder="DD/MM/YYYY HH:MM"
                             />
                             {dateErrors.start && (
                                 <div style={{
@@ -1160,6 +1092,7 @@ const RecurrencePicker: React.FC<{
 
 export const RecurrencePickerComponent: React.FC<IRecurrencePickerProps> = ({
     isVisible,
+    dateLocale,
     initialData,
     onSet,
     onCancel,
@@ -1253,7 +1186,7 @@ export const RecurrencePickerComponent: React.FC<IRecurrencePickerProps> = ({
                             <ul style={{ margin: '4px 0', paddingLeft: '20px' }}>
                                 {nextOccurrences.map((date, index) => (
                                     <li key={index} style={{ fontSize: '14px' }}>
-                                        {date.toLocaleDateString('en-GB')} ({date.toLocaleDateString('en-US', { weekday: 'long' })})
+                                        {date.toLocaleDateString(dateLocale)} ({date.toLocaleDateString(dateLocale, { weekday: 'long' })})
                                     </li>
                                 ))}
                             </ul>
@@ -1360,6 +1293,7 @@ export const RecurrencePickerComponent: React.FC<IRecurrencePickerProps> = ({
                 <RecurrencePicker
                     onSet={handleSet}
                     onCancel={onCancel}
+                    dateLocale={dateLocale}
                     initialData={initialData || undefined}
                 />
             )}
