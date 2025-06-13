@@ -292,9 +292,6 @@ const DatePicker: React.FC<IDatePickerProps> = ({
     }, [value]);
 
     React.useEffect(() => {
-    }, [displayValue]);
-
-    React.useEffect(() => {
         const handleClickOutside = (event: MouseEvent) => {
             if (pickerRef.current && !pickerRef.current.contains(event.target as Node)) {
                 const target = event.target as Element;
@@ -613,7 +610,7 @@ const RecurrencePicker: React.FC<{
                 
                 const day = values.day;
                 const month = values.month;
-                let year = values.year;
+                const year = values.year;
                 const date = new Date(year, month - 1, day);
                 return {
                     date,
