@@ -60,7 +60,6 @@ class RRuleConverter {
     // Convert our data structure to RRULE
     static toRRule(data: IRecurrenceData): string {
         try {
-            console.log('Converting data to RRULE:', data);
             const startDate = getDateUtils().parseDate(data.startDate);
             const endDate = data.hasEndDate && data.endDate ? getDateUtils().parseDate(data.endDate) : null;
 
@@ -150,7 +149,6 @@ class RRuleConverter {
             
             const startDate = startDateStr || getDateUtils().formatDate(options.dtstart || new Date());
             const endDate = options.until ? getDateUtils().formatDate(options.until) : null;
-            
             let pattern: string;
             let selectedDays: string[] = [];
             let monthlyOption = 'day';
@@ -294,7 +292,6 @@ const DatePicker: React.FC<IDatePickerProps> = ({
     }, [value]);
 
     React.useEffect(() => {
-        console.log("Display value updated:", displayValue);
     }, [displayValue]);
 
     React.useEffect(() => {
@@ -341,7 +338,6 @@ const DatePicker: React.FC<IDatePickerProps> = ({
     const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const selectedDate = e.target.value;
         const formattedDate = showTime? getDateUtils().formatDateTime(new Date(selectedDate)) : formatDate(selectedDate);
-        console.log("Date input changed:", formattedDate);
         const validationError = validateDate(formattedDate);
         
         setDisplayValue(formattedDate);
@@ -358,7 +354,6 @@ const DatePicker: React.FC<IDatePickerProps> = ({
     };
 
     const convertToInputFormat = (displayDate: string): string => {
-        console.log("Converting display date to input format:", displayDate);
         if (!displayDate) return "";
         try {
             const parts = displayDate.split('/');
@@ -377,7 +372,6 @@ const DatePicker: React.FC<IDatePickerProps> = ({
     };
 
     const handleTextChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        console.log("Text input changed:", e.target.value);
         setDisplayValue(e.target.value);
         setError("");
     };
@@ -488,8 +482,6 @@ const RecurrencePicker: React.FC<{
 }> = ({ onSet, onCancel, dateLocale, initialData = {} as IRecurrenceData }) => {
     // Use system defaults for dates
     const getDefaultStartDate = () => initialData?.startDate ? DateTimeFormatter.formatDateTime(initialData?.startDate, dateLocale) : getDateUtils().getToday();
-    console.log("Default intialtialData start date:", initialData?.startDate);
-    console.log("Default getDateUtils start date:", getDateUtils().getToday());
     const getDefaultEndDate = () => initialData?.endDate ? DateTimeFormatter.formatDateTime(initialData?.endDate, dateLocale, 'date') : getDateUtils().getOneYearFromToday();
 
     const [startDate, setStartDate] = React.useState(getDefaultStartDate());
@@ -545,7 +537,6 @@ const RecurrencePicker: React.FC<{
 
     // Handle start date change with validation
     const handleStartDateChange = (newStartDate: string) => {
-        console.log("Start date changed to:", newStartDate);
         setStartDate(newStartDate);
         
         // Always update end date to be one year from new start date
@@ -598,13 +589,35 @@ const RecurrencePicker: React.FC<{
     // Helper function to parse date string and get date components
     const getDateComponents = (dateStr: string) => {
         try {
-            const parts = dateStr.split('/');
-            if (parts.length === 3) {
-                const [day, month, year] = parts;
-                const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+            // Enhanced parsing logic for better international support
+            const dateParts = dateStr.split(/[/.-]/);
+            
+            
+            if (dateParts.length >= 3) {
+                // let day: number, month: number, year: number;
+                
+                // Use Intl.DateTimeFormat to determine locale's date format
+                const formatter = new Intl.DateTimeFormat(dateLocale);
+                const formatParts = formatter.formatToParts(new Date(2023, 0, 15)); // Jan 15, 2023
+                const order = formatParts
+                    .filter(part => ['day', 'month', 'year'].includes(part.type))
+                    .map(part => part.type);
+                
+                // Parse according to locale format
+                const values: Record<string, number> = {};
+                order.forEach((type, index) => {
+                    if (index < dateParts.length) {
+                        values[type] = parseInt(dateParts[index]);
+                    }
+                });
+                
+                const day = values.day;
+                const month = values.month;
+                let year = values.year;
+                const date = new Date(year, month - 1, day);
                 return {
                     date,
-                    dayOfMonth: parseInt(day),
+                    dayOfMonth: day,
                     monthName: date.toLocaleDateString(dateLocale, { month: 'long' }),
                     dayName: date.toLocaleDateString(dateLocale, { weekday: 'long' }),
                     weekOfMonth: getWeekOfMonth(date),

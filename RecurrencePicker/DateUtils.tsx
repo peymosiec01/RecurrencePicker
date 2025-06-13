@@ -14,19 +14,18 @@ export const getDateUtils = () => {
 // Factory function to create date utility functions
 export const createDateUtils = (locale: string) => ({
     getToday(): string {
-        console.log("Getting today's date in locale:", locale);
-        return new Date().toLocaleDateString(locale);
+        return new Date().toLocaleDateString(locale, { year: 'numeric', month: 'numeric', day: 'numeric' });
     },
 
     getTodayDateTime(includeTime = true): string {
         const today = new Date();
-        return includeTime ? this.formatDateTime(today) : today.toLocaleDateString(locale);
+        return includeTime ? this.formatDateTime(today) : today.toLocaleDateString(locale, { year: 'numeric', month: 'numeric', day: 'numeric' });
     },
 
     getOneYearFromToday(): string {
         const oneYearFromNow = new Date();
         oneYearFromNow.setFullYear(oneYearFromNow.getFullYear() + 1);
-        return oneYearFromNow.toLocaleDateString(locale);
+        return oneYearFromNow.toLocaleDateString(locale, { year: 'numeric', month: 'numeric', day: 'numeric' });
     },
 
     parseDate(dateStr: string): Date {
@@ -40,17 +39,14 @@ export const createDateUtils = (locale: string) => ({
     },
 
     // getOneYearFromDate(dateStr: string): string {
-    //     console.log("Calculating one year from date:", dateStr, "Locale:", locale);
     //     const baseDate = this.parseDate(dateStr);
     //     const oneYearLater = new Date(baseDate);
     //     oneYearLater.setFullYear(oneYearLater.getFullYear() + 1);
-    //     console.log("One year from date:", dateStr, "->", oneYearLater.toLocaleDateString(locale));
-    //     return oneYearLater.toLocaleDateString(locale);
+    //     return oneYearLater.toLocaleDateString(locale, { year: 'numeric', month: 'numeric', day: 'numeric' });
     // },
 
     formatDate(date: Date): string {
-        console.log("Formatting date:", date, "Locale:", locale);
-        return date.toLocaleDateString(locale);
+        return date.toLocaleDateString(locale, { year: 'numeric', month: 'numeric', day: 'numeric' });
     },
 
     isValidDate(dateStr: string): boolean {
@@ -70,7 +66,6 @@ export const createDateUtils = (locale: string) => ({
         const today = new Date();
         today.setHours(0, 0, 0, 0);
         date.setHours(23, 0, 0, 0);
-        console.log("Checking if date is today or future:", date, "Today:", today, "Locale:", locale);
         return date >= today;
     },
 
@@ -81,8 +76,7 @@ export const createDateUtils = (locale: string) => ({
     },
 
     formatDateTime(date: Date): string {
-        console.log("Formatting date time:", date, "Locale:", locale);
-        const dateStr = date.toLocaleDateString(locale);
+        const dateStr = date.toLocaleDateString(locale, { year: 'numeric', month: 'numeric', day: 'numeric' });
         const timeStr = date.toLocaleTimeString(locale, {
             hour: '2-digit',
             minute: '2-digit',
@@ -115,23 +109,21 @@ export const createDateUtils = (locale: string) => ({
 
     // Primary implementation using Intl.DateTimeFormat for robust locale handling
     getOneYearFromDate(dateStr: string): string {
-        console.log("Calculating one year from date:", dateStr, "Locale:", locale);
-        
+
         const baseDate = this.parseDateTime(dateStr);
-        
+
         // Add one year
         const oneYearLater = new Date(baseDate);
         oneYearLater.setFullYear(baseDate.getFullYear() + 1);
-        
+
         // Handle leap year edge case
         if (baseDate.getMonth() === 1 && baseDate.getDate() === 29) {
             if (oneYearLater.getMonth() !== 1) {
                 oneYearLater.setDate(0); // Last day of February
             }
         }
-        
-        const result = oneYearLater.toLocaleDateString(locale);
-        console.log("One year from date:", dateStr, "->", result);
+
+        const result = oneYearLater.toLocaleDateString(locale, { year: 'numeric', month: 'numeric', day: 'numeric' });
         return result;
     },
 
@@ -147,18 +139,18 @@ export const createDateUtils = (locale: string) => ({
 
         // Enhanced parsing logic for better international support
         const dateParts = dateStr.split(/[/.-]/);
-        
-        
+
+
         if (dateParts.length >= 3) {
             // let day: number, month: number, year: number;
-            
+
             // Use Intl.DateTimeFormat to determine locale's date format
             const formatter = new Intl.DateTimeFormat(locale);
             const formatParts = formatter.formatToParts(new Date(2023, 0, 15)); // Jan 15, 2023
             const order = formatParts
                 .filter(part => ['day', 'month', 'year'].includes(part.type))
                 .map(part => part.type);
-            
+
             // Parse according to locale format
             const values: Record<string, number> = {};
             order.forEach((type, index) => {
@@ -166,16 +158,16 @@ export const createDateUtils = (locale: string) => ({
                     values[type] = parseInt(dateParts[index]);
                 }
             });
-            
+
             const day = values.day;
             const month = values.month;
             let year = values.year;
-            
+
             // Handle 2-digit years
             if (year < 100) {
                 year += (year < 50) ? 2000 : 1900;
             }
-            
+
             date = new Date(year, month - 1, day);
         } else {
             // Fallback to your original logic
@@ -193,226 +185,231 @@ export const createDateUtils = (locale: string) => ({
         const hours = parseInt(timeParts[0]) || 0;
         const minutes = parseInt(timeParts[1]) || 0;
         const seconds = parseInt(timeParts[2]) || 0;
-        
+
         date.setHours(hours, minutes, seconds, 0);
         return date;
     },
 
     toHtmlDateTime(dateTimeStr: string): string {
         const date = this.parseDateTime(dateTimeStr);
-        console.log("Converting to HTML date time:", dateTimeStr, "->", date.toLocaleString(locale), "Locale:", locale);
         return date.toLocaleString(locale);
     }
 });
 
 // Modern DateTime Formatter with automatic format detection
 export class DateTimeFormatter {
-  private static readonly DATE_PATTERNS = [
-    // ISO formats (most reliable)
-    { regex: /^(\d{4})-(\d{1,2})-(\d{1,2})[\sT](\d{1,2}):(\d{2})(?::(\d{2}))?/, format: 'ISO' },
+    private static readonly DATE_PATTERNS = [
+        // ISO formats (most reliable)
+        { regex: /^(\d{4})-(\d{1,2})-(\d{1,2})[\sT](\d{1,2}):(\d{2})(?::(\d{2}))?/, format: 'ISO' },
 
-    // Slash formats with time (allow comma or space)
-    { regex: /^(\d{1,2})\/(\d{1,2})\/(\d{4})[,\s]+(\d{1,2}):(\d{2})$/, format: 'SLASH' },
+        // Slash formats with time (allow comma or space)
+        { regex: /^(\d{1,2})\/(\d{1,2})\/(\d{4})[,\s]+(\d{1,2}):(\d{2})$/, format: 'SLASH' },
 
-    // Dot formats with time (allow comma or space)
-    { regex: /^(\d{1,2})\.(\d{1,2})\.(\d{4})[,\s]+(\d{1,2}):(\d{2})$/, format: 'DOT' },
+        // Dot formats with time (allow comma or space)
+        { regex: /^(\d{1,2})\.(\d{1,2})\.(\d{4})[,\s]+(\d{1,2}):(\d{2})$/, format: 'DOT' },
 
-    // Dash formats with time (allow comma or space)
-    { regex: /^(\d{1,2})-(\d{1,2})-(\d{4})[,\s]+(\d{1,2}):(\d{2})$/, format: 'DASH' },
+        // Dash formats with time (allow comma or space)
+        { regex: /^(\d{1,2})-(\d{1,2})-(\d{4})[,\s]+(\d{1,2}):(\d{2})$/, format: 'DASH' },
 
-    // --- date-only patterns ---
-    { regex: /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/, format: 'SLASH_DATE' },
-    { regex: /^(\d{1,2})\.(\d{1,2})\.(\d{4})$/, format: 'DOT_DATE' },
-    { regex: /^(\d{1,2})-(\d{1,2})-(\d{4})$/, format: 'DASH_DATE' },
-  ] as const;
+        // --- date-only patterns ---
+        { regex: /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/, format: 'SLASH_DATE' },
+        { regex: /^(\d{1,2})\.(\d{1,2})\.(\d{4})$/, format: 'DOT_DATE' },
+        { regex: /^(\d{1,2})-(\d{1,2})-(\d{4})$/, format: 'DASH_DATE' },
+    ] as const;
 
-  private static readonly LOCALE_PREFERENCES = {
-    'en-US': { dayFirst: false, separator: '/' },
-    'en-GB': { dayFirst: true, separator: '/' },
-    'en-AU': { dayFirst: true, separator: '/' },
-    'de-DE': { dayFirst: true, separator: '.' },
-    'fr-FR': { dayFirst: true, separator: '/' },
-    'it-IT': { dayFirst: true, separator: '/' },
-    'es-ES': { dayFirst: true, separator: '/' },
-    'pt-BR': { dayFirst: true, separator: '/' },
-    'ja-JP': { dayFirst: false, separator: '/' },
-    'ko-KR': { dayFirst: false, separator: '.' },
-  } as const;
+    private static readonly LOCALE_PREFERENCES = {
+        'en-US': { dayFirst: false, separator: '/' },
+        'en-GB': { dayFirst: true, separator: '/' },
+        'en-AU': { dayFirst: true, separator: '/' },
+        'de-DE': { dayFirst: true, separator: '.' },
+        'fr-FR': { dayFirst: true, separator: '/' },
+        'it-IT': { dayFirst: true, separator: '/' },
+        'es-ES': { dayFirst: true, separator: '/' },
+        'pt-BR': { dayFirst: true, separator: '/' },
+        'ja-JP': { dayFirst: false, separator: '/' },
+        'ko-KR': { dayFirst: false, separator: '.' },
+    } as const;
 
-  /**
-   * Intelligently parse a date string or pass through a Date object
-   */
-  static parseDate(input: Date | string, locale: string): Date {
-    if (input instanceof Date) {
-      if (isNaN(input.getTime())) {
-        throw new Error('Invalid Date object provided');
-      }
-      return input;
-    }
-
-    // Try native parsing first (handles ISO and some other formats)
-    const nativeDate = new Date(input);
-    if (!isNaN(nativeDate.getTime())) {
-      return nativeDate;
-    }
-
-    // Smart parsing with pattern matching
-    return this.smartParse(input, locale);
-  }
-
-  /**
-   * Smart parsing with automatic format detection
-   */
-  private static smartParse(dateString: string, locale: string): Date {
-    for (const pattern of this.DATE_PATTERNS) {
-      const match = dateString.match(pattern.regex);
-      if (!match) continue;
-
-      try {
-        const date = this.parseWithPattern(match, pattern.format, locale);
-        if (!isNaN(date.getTime())) {
-          return date;
+    /**
+     * Intelligently parse a date string or pass through a Date object
+     */
+    static parseDate(input: Date | string, locale: string): Date {
+        if (input instanceof Date) {
+            if (isNaN(input.getTime())) {
+                throw new Error('Invalid Date object provided');
+            }
+            return input;
         }
-      } catch {
-        continue;
-      }
+
+        // Try native parsing first (handles ISO and some other formats)
+        const nativeDate = new Date(input);
+        if (!isNaN(nativeDate.getTime())) {
+            return nativeDate;
+        }
+        console.warn(`Native Date parsing failed for input: "${input}". Falling back to smart parsing.`);
+        // Smart parsing with pattern matching
+        return this.smartParse(input, locale);
     }
 
-    throw new Error(`Unable to parse date string: "${dateString}"`);
-  }
+    /**
+     * Smart parsing with automatic format detection
+     */
+    private static smartParse(dateString: string, locale: string): Date {
+        for (const pattern of this.DATE_PATTERNS) {
+            const match = dateString.match(pattern.regex);
+            if (!match) continue;
 
-  /**
-   * Parse matched groups based on detected pattern
-   */
-  private static parseWithPattern(
-    match: RegExpMatchArray, 
-    format: string, 
-    locale: string
-  ): Date {
-    // For date-only patterns, set hour/minute/second to 0
-    if (format.endsWith('_DATE')) {
-      const [, p1, p2, p3] = match;
-      const { dayFirst } = this.getLocalePreference(locale);
-      const parts = [+p1, +p2, +p3];
-      const { day, month, year } = this.detectDateParts(parts, dayFirst);
-      return new Date(year, month - 1, day, 0, 0, 0);
+            try {
+                const date = this.parseWithPattern(match, pattern.format, locale);
+                if (!isNaN(date.getTime())) {
+                    return date;
+                }
+            } catch {
+                continue;
+            }
+        }
+
+        throw new Error(`Unable to parse date string: "${dateString}"`);
     }
 
-    const [, p1, p2, p3, hour, minute, second = '0'] = match;
-    
-    if (format === 'ISO') {
-      // ISO format: YYYY-MM-DD
-      return new Date(+p1, +p2 - 1, +p3, +hour, +minute, +second);
+    /**
+     * Parse matched groups based on detected pattern
+     */
+    private static parseWithPattern(
+        match: RegExpMatchArray,
+        format: string,
+        locale: string
+    ): Date {
+        // For date-only patterns, set hour/minute/second to 0
+        if (format.endsWith('_DATE')) {
+            const [, p1, p2, p3] = match;
+            const { dayFirst } = this.getLocalePreference(locale);
+            const parts = [+p1, +p2, +p3];
+            const { day, month, year } = this.detectDateParts(parts, dayFirst);
+            return new Date(year, month - 1, day, 0, 0, 0);
+        }
+
+        const [, p1, p2, p3, hour, minute, second = '0'] = match;
+
+        if (format === 'ISO') {
+            // ISO format: YYYY-MM-DD
+            return new Date(+p1, +p2 - 1, +p3, +hour, +minute, +second);
+        }
+
+        // For ambiguous formats, use smart detection
+        const { dayFirst } = this.getLocalePreference(locale);
+        const parts = [+p1, +p2, +p3];
+
+        // Auto-detect based on values
+        const { day, month, year } = this.detectDateParts(parts, dayFirst);
+
+        return new Date(year, month - 1, day, +hour, +minute, +second);
     }
 
-    // For ambiguous formats, use smart detection
-    const { dayFirst } = this.getLocalePreference(locale);
-    const parts = [+p1, +p2, +p3];
-    
-    // Auto-detect based on values
-    const { day, month, year } = this.detectDateParts(parts, dayFirst);
-    
-    return new Date(year, month - 1, day, +hour, +minute, +second);
-  }
+    /**
+     * Intelligently detect day/month/year from numeric parts
+     */
+    private static detectDateParts(
+        parts: number[],
+        preferDayFirst: boolean
+    ): { day: number; month: number; year: number } {
+        const [p1, p2, p3] = parts;
 
-  /**
-   * Intelligently detect day/month/year from numeric parts
-   */
-  private static detectDateParts(
-    parts: number[], 
-    preferDayFirst: boolean
-  ): { day: number; month: number; year: number } {
-    const [p1, p2, p3] = parts;
-    
-    // Year is always the 4-digit number
-    const yearIndex = parts.findIndex(p => p > 31);
-    if (yearIndex === -1) {
-      throw new Error('Unable to identify year in date');
-    }
-    
-    const year = parts[yearIndex];
-    const remaining = parts.filter((_, i) => i !== yearIndex);
-    const [first, second] = remaining;
-    
-    // If one number is > 12, it must be the day
-    if (first > 12) {
-      return { day: first, month: second, year };
-    }
-    if (second > 12) {
-      return { day: second, month: first, year };
-    }
-    
-    // Both numbers are ≤ 12, use locale preference
-    if (preferDayFirst) {
-      return { day: first, month: second, year };
-    } else {
-      return { day: second, month: first, year };
-    }
-  }
+        // Year is always the 4-digit number
+        const yearIndex = parts.findIndex(p => p > 31);
+        if (yearIndex === -1) {
+            throw new Error('Unable to identify year in date');
+        }
 
-  /**
-   * Get locale-specific formatting preferences
-   */
-  private static getLocalePreference(locale: string) {
-    return this.LOCALE_PREFERENCES[locale as keyof typeof this.LOCALE_PREFERENCES] 
-           ?? this.LOCALE_PREFERENCES['en-US'];
-  }
+        const year = parts[yearIndex];
+        const remaining = parts.filter((_, i) => i !== yearIndex);
+        const [first, second] = remaining;
 
-  /**
-   * Main formatting function - handles both Date objects and strings
-   */
-  static formatDateTime(
-    date: Date | string,
-    locale: string,
-    mode: 'datetime' | 'date' = 'datetime',
-    options: {
-        dateStyle?: 'full' | 'long' | 'medium' | 'short';
-        timeStyle?: 'full' | 'long' | 'medium' | 'short';
-        hour12?: boolean;
-    } = {}
+        // If one number is > 12, it must be the day
+        if (first > 12) {
+            return { day: first, month: second, year };
+        }
+        if (second > 12) {
+            return { day: second, month: first, year };
+        }
+
+        // Both numbers are ≤ 12, use locale preference
+        if (preferDayFirst) {
+            return { day: first, month: second, year };
+        } else {
+            return { day: second, month: first, year };
+        }
+    }
+
+    /**
+     * Get locale-specific formatting preferences
+     */
+    private static getLocalePreference(locale: string) {
+        return this.LOCALE_PREFERENCES[locale as keyof typeof this.LOCALE_PREFERENCES]
+            ?? this.LOCALE_PREFERENCES['en-US'];
+    }
+
+    /**
+     * Main formatting function - handles both Date objects and strings
+     */
+    static formatDateTime(
+        date: Date | string,
+        locale: string,
+        mode: 'datetime' | 'date' = 'datetime',
+        options: {
+            dateStyle?: 'full' | 'long' | 'medium' | 'short';
+            timeStyle?: 'full' | 'long' | 'medium' | 'short';
+            hour12?: boolean;
+        } = {}
     ): string {
-    const {
-        dateStyle = 'short',
-        timeStyle = 'short',
-        hour12 = false
-    } = options;
+        const {
+            dateStyle = 'short',
+            timeStyle = 'short',
+            hour12 = false
+        } = options;
 
-    try {
+        try {
+            const dateObj = this.parseDate(date, locale);
+
+            // Always use 4-digit year for date part
+            const dateOptions: Intl.DateTimeFormatOptions = {
+                year: 'numeric',
+                month: 'numeric',
+                day: 'numeric',
+                ...(mode === 'datetime' ? {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12
+                } : {})
+            };
+
+            const formatter = new Intl.DateTimeFormat(locale, dateOptions);
+            return formatter.format(dateObj);
+        } catch (error) {
+            console.error('DateTime formatting error:', error);
+            throw new Error(`Failed to format date: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        }
+    }
+
+    /**
+     * Alternative method with granular control
+     */
+    static formatDateTimeCustom(
+        date: Date | string,
+        locale: string,
+        showTime = true
+    ): string {
         const dateObj = this.parseDate(date, locale);
 
-        // If mode is 'date', omit timeStyle
-        const formatter = new Intl.DateTimeFormat(locale, {
-        dateStyle,
-        ...(mode === 'datetime' ? { timeStyle } : {}),
-        hour12
+        const dateStr = dateObj.toLocaleDateString(locale, { year: 'numeric', month: 'numeric', day: 'numeric' });
+        const timeStr = dateObj.toLocaleTimeString(locale, {
+            hour: '2-digit',
+            minute: '2-digit',
+            hour12: false
         });
 
-        return formatter.format(dateObj);
-    } catch (error) {
-        console.error('DateTime formatting error:', error);
-        throw new Error(`Failed to format date: ${error instanceof Error ? error.message : 'Unknown error'}`);
+        return showTime ? `${dateStr} ${timeStr}` : dateStr;
     }
-    }
-
-  /**
-   * Alternative method with granular control
-   */
-  static formatDateTimeCustom(
-    date: Date | string,
-    locale: string,
-    showTime = true
-  ): string {
-    const dateObj = this.parseDate(date, locale);
-    
-    const dateStr = dateObj.toLocaleDateString(locale);
-    const timeStr = dateObj.toLocaleTimeString(locale, {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false
-    });
-    
-    return showTime ? `${dateStr} ${timeStr}` : dateStr;
-  }
 }
 
 // Usage examples:

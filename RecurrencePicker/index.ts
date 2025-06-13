@@ -19,7 +19,6 @@ export class RecurrencePicker implements ComponentFramework.StandardControl<IInp
 
     public init(context: ComponentFramework.Context<IInputs>, notifyOutputChanged: () => void, state: ComponentFramework.Dictionary, container: HTMLDivElement): void {
         this._context = context;
-        console.log("Initializing RecurrencePicker with context:", context);
         this._container = container;
         this._notifyOutputChanged = notifyOutputChanged;
         this._isVisible = context.parameters.isVisible?.raw ?? false;
@@ -36,7 +35,6 @@ export class RecurrencePicker implements ComponentFramework.StandardControl<IInp
         this._dateLocale = context.parameters.dateLocale?.raw; // default to en-GB
 
         // Update date utils if locale changes
-        console.log("Updating date utils with locale:", this._dateLocale);
         const utils = createDateUtils(this._dateLocale);
         setDateUtils(utils);
 
@@ -76,7 +74,6 @@ export class RecurrencePicker implements ComponentFramework.StandardControl<IInp
             React.createElement(RecurrencePickerComponent, props),
             this._container
         );
-        console.log("Rendering RecurrencePickerComponent with props:", props);
     }
 
 
