@@ -46,6 +46,7 @@ export class RecurrencePicker implements ComponentFramework.StandardControl<IInp
             this._isVisible = newVisibility;
         }
 
+
         this.renderComponent();
     }
 

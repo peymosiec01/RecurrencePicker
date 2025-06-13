@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { RRule, Frequency, Weekday, RRuleStrOptions } from 'rrule';
-import { getDateUtils } from './DateUtils';
+import { getDateUtils, DateTimeFormatter } from './DateUtils';
 
 export interface IRecurrenceData {
     startDate: string;
@@ -487,10 +487,10 @@ const RecurrencePicker: React.FC<{
     initialData?: IRecurrenceData;
 }> = ({ onSet, onCancel, dateLocale, initialData = {} as IRecurrenceData }) => {
     // Use system defaults for dates
-    const getDefaultStartDate = () => initialData?.startDate || getDateUtils().getToday();
+    const getDefaultStartDate = () => initialData?.startDate ? DateTimeFormatter.formatDateTime(initialData?.startDate, dateLocale) : getDateUtils().getToday();
     console.log("Default intialtialData start date:", initialData?.startDate);
     console.log("Default getDateUtils start date:", getDateUtils().getToday());
-    const getDefaultEndDate = () => initialData?.endDate || getDateUtils().getOneYearFromToday();
+    const getDefaultEndDate = () => initialData?.endDate ? DateTimeFormatter.formatDateTime(initialData?.endDate, dateLocale, 'date') : getDateUtils().getOneYearFromToday();
 
     const [startDate, setStartDate] = React.useState(getDefaultStartDate());
     const [recurrencePattern, setRecurrencePattern] = React.useState(initialData?.pattern || "day");
@@ -565,7 +565,7 @@ const RecurrencePicker: React.FC<{
         setHasEndDate(true);
         if (!endDate || !getDateUtils().isBefore(startDate, endDate)) {
             // Set default end date to one year from start date
-            const oneYearFromStart = new Date(getDateUtils().parseDate(startDate));
+            const oneYearFromStart = new Date(DateTimeFormatter.parseDate(startDate, dateLocale));
             oneYearFromStart.setFullYear(oneYearFromStart.getFullYear() + 1);
             setEndDate(getDateUtils().formatDate(oneYearFromStart));
         }
@@ -994,6 +994,7 @@ const RecurrencePicker: React.FC<{
                             {hasEndDate && (
                                 <div className="">
                                     <DatePicker
+                                        showTime={false}
                                         value={endDate}
                                         onChange={handleEndDateChange}
                                         placeholder="Select end date"
