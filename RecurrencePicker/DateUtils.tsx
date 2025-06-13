@@ -400,7 +400,7 @@ export class DateTimeFormatter {
   static formatDateTimeCustom(
     date: Date | string,
     locale: string,
-    showTime: boolean = true
+    showTime = true
   ): string {
     const dateObj = this.parseDate(date, locale);
     

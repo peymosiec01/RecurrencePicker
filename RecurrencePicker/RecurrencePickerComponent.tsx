@@ -565,7 +565,7 @@ const RecurrencePicker: React.FC<{
         setHasEndDate(true);
         if (!endDate || !getDateUtils().isBefore(startDate, endDate)) {
             // Set default end date to one year from start date
-            const oneYearFromStart = new Date(DateTimeFormatter.parseDate(startDate, dateLocale));
+            const oneYearFromStart = new Date(getDateUtils().parseDate(startDate));
             oneYearFromStart.setFullYear(oneYearFromStart.getFullYear() + 1);
             setEndDate(getDateUtils().formatDate(oneYearFromStart));
         }
@@ -759,7 +759,7 @@ const RecurrencePicker: React.FC<{
             return; // Don't save if validation fails
         }
 
-        const recurrenceData: IRecurrenceData = {
+        const recurrenceData: IRecurrenceData & { nextOccurrences?: string[] } = {
             startDate,
             pattern: recurrencePattern,
             every: everyValue,
@@ -767,7 +767,13 @@ const RecurrencePicker: React.FC<{
             monthlyOption,
             yearlyOption,
             endDate: hasEndDate ? endDate : null,
-            hasEndDate
+            hasEndDate,
+            rrule: "", // will be set below
+            description: "", // will be set below
+            // Add nextOccurrences as formatted strings (date and time)
+            nextOccurrences: RRuleConverter.getOccurrences(rrulePreview, 10).map(date =>
+                date.toLocaleString(dateLocale)
+            )
         };
 
         try {
@@ -775,6 +781,10 @@ const RecurrencePicker: React.FC<{
             const rrule = RRuleConverter.toRRule(recurrenceData);
             recurrenceData.rrule = rrule;
             recurrenceData.description = RRuleConverter.getDescription(rrule);
+            // Optionally, update nextOccurrences if you want more/fewer
+            recurrenceData.nextOccurrences = RRuleConverter.getOccurrences(rrule, 10).map(date =>
+                date.toLocaleString(dateLocale)
+            );
         } catch (error) {
             console.error('Error generating RRULE:', error);
             recurrenceData.rrule = rrulePreview;
